@@ -13,7 +13,8 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
 }
 
 // Restore async and data fetching, but keep props type as 'any' for build workaround
-export default async function ProductPage({ params }: any) {
+export default async function ProductPage(props: any) {
+  const params = await props.params;
   const slug = params.slug;
   const product = await getProductContent(slug);
 
