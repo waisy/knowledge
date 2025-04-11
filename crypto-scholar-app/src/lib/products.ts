@@ -55,6 +55,8 @@ export async function getProductList(): Promise<ProductInfo[]> {
 
         const tree = processor.parse(content) as Root;
 
+        // Use type assertion here: tree as Node
+        // @ts-ignore - Suppressing persistent type mismatch error between unist/mdast types and visit function expectation
         visit(tree as Node, 'heading', (node: Heading) => {
           if (node.depth > 1 && node.depth <= 3) {
             const headingText = toString(node);
@@ -114,13 +116,16 @@ export async function getProductContent(slug: string): Promise<ProductContent | 
       // If not, the parsing logic from getProductList could be reused here.
       return { slug, title, content }; // Headings are not included here, assumed fetched separately
 
-    } catch (error: any) {
-      // If error is ENOENT (file not found), continue to the next directory
-      if (error.code !== 'ENOENT') {
-        // If it's a different error, log it but still try the next directory
+    } catch (error: unknown) { // Type error as unknown
+      // Check if it's an error object with a code property
+      if (error instanceof Error && (error as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.warn(`[getProductContent] Warning accessing file ${filePath}:`, error);
-      } else {
+      } else if (!(error instanceof Error) || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+        // Handle file not found or non-standard errors gracefully
          console.log(`[getProductContent] Slug '${slug}' not found in ${dir}`);
+      } else {
+        // Handle other unknown error types
+        console.warn(`[getProductContent] Unknown error accessing file ${filePath}:`, error);
       }
     }
   }

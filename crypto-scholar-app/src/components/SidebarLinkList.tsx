@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import { useProgress } from '@/hooks/useProgress';
 import { CheckCircle } from 'lucide-react';
-import { ProductInfo, HeadingInfo } from '@/lib/products'; // Import HeadingInfo
+import { ProductInfo } from '@/lib/products'; // Just import ProductInfo
 import React, { useState, useEffect, useRef } from 'react'; // Import useState, useEffect, useRef
 import throttle from 'lodash/throttle'; // Import throttle for performance
 
@@ -33,7 +33,7 @@ export function SidebarLinkList({ products }: SidebarLinkListProps) {
     // Trigger scroll handler once initially after finding headings
     handleScroll(); 
 
-  }, [pathname]); // Re-run if the page changes
+  }, [pathname, handleScroll]); // Add handleScroll dependency
 
   // Effect to handle scroll and hash changes
   useEffect(() => {
@@ -52,7 +52,7 @@ export function SidebarLinkList({ products }: SidebarLinkListProps) {
       window.removeEventListener('hashchange', handleHashChange);
       throttledScrollHandler.cancel(); // Clean up throttle
     };
-  }, [pathname]); // Rerun if pathname changes
+  }, [pathname, handleScroll, handleHashChange]); // Add handleScroll & handleHashChange dependencies
 
   function handleHashChange() {
     setActiveHash(window.location.hash);

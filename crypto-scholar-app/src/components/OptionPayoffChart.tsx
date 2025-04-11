@@ -9,6 +9,13 @@ import {
   Tooltip,
   Legend,
   Filler,
+  ScriptableContext,
+  ChartOptions,
+  TooltipItem,
+  Tick,
+  ScriptableLineSegmentContext,
+  ChartData,
+  ChartDataset,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -257,33 +264,35 @@ const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
   const payoffs = calculatePayoff(prices);
   const titleText = getChartTitle();
 
-  const chartData = {
-    labels: prices.map(p => p.toFixed(0)),
-    datasets: [
-      {
-        label: 'Profit/Loss',
-        data: payoffs,
-        tension: 0.1,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        fill: true,
-        segment: {
-          borderColor: (ctx: any) => {
-            const y0 = ctx.p0.parsed.y;
-            const y1 = ctx.p1.parsed.y;
-            return (y0 < 0 || y1 < 0) ? 'rgb(239, 68, 68)' : 'rgb(59, 130, 246)';
-          },
-          backgroundColor: (ctx: any) => {
-            const y0 = ctx.p0.parsed.y;
-            const y1 = ctx.p1.parsed.y;
-            return (y0 < 0 || y1 < 0) ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)';
-          },
-        }
+  // Define dataset type for clarity
+  const payoffDataset: ChartDataset<"line", number[]> = {
+    label: 'Profit/Loss',
+    data: payoffs,
+    tension: 0.1,
+    pointRadius: 0,
+    pointHoverRadius: 5,
+    fill: true,
+    segment: {
+      borderColor: (ctx: ScriptableLineSegmentContext) => {
+        const y0 = ctx.p0.parsed.y;
+        const y1 = ctx.p1.parsed.y;
+        return (y0 < 0 || y1 < 0) ? 'rgb(239, 68, 68)' : 'rgb(59, 130, 246)';
       },
-    ],
+      backgroundColor: (ctx: ScriptableLineSegmentContext) => {
+        const y0 = ctx.p0.parsed.y;
+        const y1 = ctx.p1.parsed.y;
+        return (y0 < 0 || y1 < 0) ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)';
+      },
+    }
   };
 
-  const chartOptions: any = {
+  // Define chart data type
+  const chartData: ChartData<"line", number[], string> = {
+    labels: prices.map(p => p.toFixed(0)),
+    datasets: [payoffDataset],
+  };
+
+  const chartOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -306,7 +315,7 @@ const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
         cornerRadius: 4,
         displayColors: false,
         callbacks: {
-          label: function(context: any) {
+          label: function(context: TooltipItem<"line">) {
             let label = context.dataset.label || '';
             if (label) {
               label += ': ';
@@ -316,8 +325,11 @@ const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
             }
             return label;
           },
-          title: function(context: any) {
-            return `Asset Price: ${context[0].label}`;
+          title: function(tooltipItems: TooltipItem<"line">[]) {
+            if (tooltipItems.length > 0 && tooltipItems[0].label) {
+              return `Asset Price: ${tooltipItems[0].label}`;
+            }
+            return '';
           }
         }
       },
@@ -331,7 +343,6 @@ const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
         },
         grid: {
           color: 'rgba(209, 213, 219, 0.1)',
-          drawBorder: false,
         },
         ticks: {
           color: '#9ca3af',
@@ -349,18 +360,22 @@ const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
         },
         grid: {
           color: 'rgba(209, 213, 219, 0.1)',
-          drawBorder: false,
         },
         ticks: {
           color: '#9ca3af',
-          callback: function(value: any) {
-            return '$' + value;
+          callback: function(value: string | number) {
+            if (typeof value === 'number') {
+              return '$' + value.toFixed(0);
+            }
+            return value;
           }
         },
-        afterBuildTicks: (axis: any) => {
-          if (!axis.ticks.some((tick: any) => tick.value === 0)) {
-            axis.ticks.push({ value: 0 });
-          }
+        afterBuildTicks: (axis: LinearScale) => {
+          if (axis.ticks && Array.isArray(axis.ticks)) {
+            if (!axis.ticks.some((tick: Tick) => tick.value === 0)) {
+              axis.ticks.push({ value: 0, label: '0' });
+            }
+          } 
         },
       },
     },
