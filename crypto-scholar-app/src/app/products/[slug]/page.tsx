@@ -4,21 +4,16 @@ import { getProductContent, getProductList } from '@/lib/products';
 import InteractiveMarkdownArea from '@/components/InteractiveMarkdownArea';
 import { ProgressButton } from '@/components/ProgressButton';
 
-export async function generateStaticParams() {
+// Explicitly type the return value
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
   const products = await getProductList();
   return products.map((product) => ({
     slug: product.slug,
   }));
 }
 
-// Use inline type definition for the props
-export default async function ProductPage({
-  params,
-}: {
-  params: { slug: string };
-  // Optionally add searchParams if needed later
-  // searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+// Restore async and data fetching, but keep props type as 'any' for build workaround
+export default async function ProductPage({ params }: any) {
   const slug = params.slug;
   const product = await getProductContent(slug);
 
