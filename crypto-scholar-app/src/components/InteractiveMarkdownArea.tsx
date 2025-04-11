@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { Button } from '@/components/ui/button';
-import { useAnnotations, Annotation } from '@/hooks/useAnnotations';
+import { useAnnotations } from '@/hooks/useAnnotations';
 
 interface InteractiveMarkdownAreaProps {
   content: string;
@@ -45,7 +45,7 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
     <div ref={containerRef} onMouseUp={handleMouseUp}>
       {isHydrated && selectedText && (
         <div className="my-2 p-2 border rounded bg-secondary flex items-center justify-between sticky top-[var(--header-height)] z-10">
-          <p className="text-sm text-secondary-foreground italic mr-2 truncate">Selected: "{selectedText}"</p>
+          <p className="text-sm text-secondary-foreground italic mr-2 truncate">Selected: &quot;{selectedText}&quot;</p>
           <Button size="sm" onClick={handleHighlight}>
             Highlight
           </Button>
@@ -59,7 +59,7 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
           <ul className="list-disc pl-5 space-y-1">
             {currentAnnotations.map(ann => (
               <li key={ann.id} className="text-sm italic flex justify-between items-center">
-                <span>"{ann.text}"</span>
+                <span>&quot;{ann.text}&quot;</span>
                 <Button 
                   variant="ghost" 
                   size="sm" 
