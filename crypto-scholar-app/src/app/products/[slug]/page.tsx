@@ -11,7 +11,17 @@ export async function generateStaticParams() {
   }));
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+// Define a proper interface for the page props
+interface ProductPageProps {
+  params: {
+    slug: string;
+  };
+  // Optionally add searchParams if needed later
+  // searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+// Use the interface for the props
+export default async function ProductPage({ params }: ProductPageProps) {
   const slug = params.slug;
   const product = await getProductContent(slug);
 
