@@ -130,3 +130,17 @@ main details summary::marker {
 main details summary {
   display: list-item;
 }
+
+/* Custom styles for details/summary marker */
+main details > summary::marker {
+  color: red; /* Make the disclosure marker red */
+}
+main details > summary {
+    list-style: revert; /* Ensure summary behaves like a list item for the marker */
+}
+
+/* Add scroll margin to headings to account for fixed header */
+main h2[id],
+main h3[id] {
+  scroll-margin-top: 5rem; /* Adjust value based on actual header height */
+}
