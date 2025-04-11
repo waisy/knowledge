@@ -9,7 +9,6 @@ import {
   Tooltip,
   Legend,
   Filler,
-  ScriptableContext,
   ChartOptions,
   TooltipItem,
   Tick,

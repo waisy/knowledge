@@ -56,7 +56,7 @@ export async function getProductList(): Promise<ProductInfo[]> {
         const tree = processor.parse(content) as Root;
 
         // Use type assertion here: tree as Node
-        // @ts-ignore - Suppressing persistent type mismatch error between unist/mdast types and visit function expectation
+        // @ts-expect-error - Suppressing persistent type mismatch error between unist/mdast types and visit function expectation
         visit(tree as Node, 'heading', (node: Heading) => {
           if (node.depth > 1 && node.depth <= 3) {
             const headingText = toString(node);

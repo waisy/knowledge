@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useProgress } from '@/hooks/useProgress';
 import { CheckCircle } from 'lucide-react';
 import { ProductInfo } from '@/lib/products'; // Just import ProductInfo
-import React, { useState, useEffect, useRef } from 'react'; // Import useState, useEffect, useRef
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Import useState, useEffect, useRef, useCallback
 import throttle from 'lodash/throttle'; // Import throttle for performance
 
 interface SidebarLinkListProps {
@@ -19,6 +19,36 @@ export function SidebarLinkList({ products }: SidebarLinkListProps) {
   const [activeHash, setActiveHash] = useState('');
   const headingElementsRef = useRef<HTMLElement[]>([]);
   const navRef = useRef<HTMLElement>(null); // Ref for the nav element
+
+  // Memoize handlers with useCallback
+  const handleHashChange = useCallback(() => {
+    setActiveHash(window.location.hash);
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const scrollY = window.scrollY;
+    const offset = 100; // Offset from the top of the viewport
+    let currentActiveHash = '';
+
+    // Iterate from bottom to top
+    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+      const heading = headingElementsRef.current[i];
+      if (heading.offsetTop <= scrollY + offset) {
+        currentActiveHash = `#${heading.id}`;
+        break; // Found the current active heading
+      }
+    }
+    
+    // Only update state if the hash has actually changed
+    setActiveHash((prevHash) => {
+      if (currentActiveHash !== prevHash) {
+        return currentActiveHash;
+      }
+      return prevHash;
+    });
+    // Dependency: activeHash is implicitly handled by the state updater function form
+    // Dependency: headingElementsRef.current is a ref, doesn't need to be listed
+  }, []);
 
   // Effect to find heading elements once on mount/pathname change
   useEffect(() => {
@@ -33,7 +63,7 @@ export function SidebarLinkList({ products }: SidebarLinkListProps) {
     // Trigger scroll handler once initially after finding headings
     handleScroll(); 
 
-  }, [pathname, handleScroll]); // Add handleScroll dependency
+  }, [pathname, handleScroll]); // Dependency array is now stable
 
   // Effect to handle scroll and hash changes
   useEffect(() => {
@@ -52,31 +82,7 @@ export function SidebarLinkList({ products }: SidebarLinkListProps) {
       window.removeEventListener('hashchange', handleHashChange);
       throttledScrollHandler.cancel(); // Clean up throttle
     };
-  }, [pathname, handleScroll, handleHashChange]); // Add handleScroll & handleHashChange dependencies
-
-  function handleHashChange() {
-    setActiveHash(window.location.hash);
-  }
-
-  function handleScroll() {
-    const scrollY = window.scrollY;
-    const offset = 100; // Offset from the top of the viewport
-    let currentActiveHash = '';
-
-    // Iterate from bottom to top
-    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
-      const heading = headingElementsRef.current[i];
-      if (heading.offsetTop <= scrollY + offset) {
-        currentActiveHash = `#${heading.id}`;
-        break; // Found the current active heading
-      }
-    }
-    
-    // Only update state if the hash has actually changed
-    if (currentActiveHash !== activeHash) {
-      setActiveHash(currentActiveHash);
-    }
-  }
+  }, [pathname, handleScroll, handleHashChange]); // Dependencies are now stable
 
   // Hydration placeholder
   if (!isHydrated) {
