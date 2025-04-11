@@ -142,7 +142,7 @@ main details > summary {
 /* Add scroll margin to headings to account for fixed header */
 main h2[id],
 main h3[id] {
-  scroll-margin-top: 5rem; /* Adjust value based on actual header height */
+  scroll-margin-top: 1rem; /* Reduced value since header is removed */
 }
 
 /* Highlighting styles */

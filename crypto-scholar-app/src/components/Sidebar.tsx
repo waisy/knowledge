@@ -9,7 +9,7 @@ export default async function Sidebar() {
   const products = await getProductList();
 
   return (
-    <aside className="w-64 border-r p-4 h-screen sticky top-[var(--header-height)] overflow-y-auto">
+    <aside className="w-64 border-r p-4 h-screen sticky top-0 overflow-y-auto">
       <h2 className="text-lg font-semibold mb-4">Topics</h2>
       {/* Render the Client Component, passing the fetched data */}
       <SidebarLinkList products={products} />

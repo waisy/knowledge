@@ -18,9 +18,20 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [isSelectedTextHighlighted, setIsSelectedTextHighlighted] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [isNarrowMode, setIsNarrowMode] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { addAnnotation, getAnnotationsForSlug, removeAnnotation, isHydrated } = useAnnotations();
   const currentAnnotations = getAnnotationsForSlug(slug);
+
+  // Load reading mode preference from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('cryptoScholarReadingMode');
+      if (savedMode === 'narrow') {
+        setIsNarrowMode(true);
+      }
+    }
+  }, []);
 
   const handleHighlight = useCallback(() => {
     if (!selectedText || !isHydrated) {
@@ -195,10 +206,43 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
     }
   }, [currentAnnotations, removeAnnotation, slug, isHydrated]);
 
+  // Toggle between wide and narrow reading modes
+  const toggleReadingMode = useCallback(() => {
+    setIsNarrowMode(prev => {
+      const newMode = !prev;
+      // Save preference to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cryptoScholarReadingMode', newMode ? 'narrow' : 'wide');
+      }
+      return newMode;
+    });
+  }, []);
+
   return (
     <div className="relative flex">
       {/* Main content area */}
-      <div ref={containerRef} onMouseUp={handleMouseUp} className="relative flex-grow">
+      <div 
+        ref={containerRef} 
+        onMouseUp={handleMouseUp} 
+        className={`relative flex-grow transition-all duration-300 ease-in-out ${isNarrowMode ? 'max-w-2xl mx-auto px-4' : ''}`}
+      >
+        {/* Reading mode toggle */}
+        <div className="fixed top-4 left-6 z-40">
+          <button 
+            onClick={toggleReadingMode}
+            className="flex items-center justify-center p-2 bg-white hover:bg-gray-100 text-gray-700 rounded-full shadow-md transition-colors border border-gray-200"
+            title={isNarrowMode ? "Switch to wide mode" : "Switch to narrow mode"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isNarrowMode ? "hidden" : ""}>
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <rect x="9" y="4" width="6" height="16" />
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isNarrowMode ? "" : "hidden"}>
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+            </svg>
+          </button>
+        </div>
+
         {isPopoverOpen && isHydrated && (
           <div 
             className="highlight-popover"
@@ -235,11 +279,13 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
           </div>
         )}
 
-        <HighlightedMarkdownRenderer 
-          content={content} 
-          annotations={currentAnnotations}
-          onRemoveAnnotation={(annotationId) => removeAnnotation(slug, annotationId)}
-        />
+        <div className={`${isNarrowMode ? 'prose prose-lg mx-auto' : ''}`}>
+          <HighlightedMarkdownRenderer 
+            content={content} 
+            annotations={currentAnnotations}
+            onRemoveAnnotation={(annotationId) => removeAnnotation(slug, annotationId)}
+          />
+        </div>
 
         {/* Highlights toggle button - visible only when there are highlights */}
         {isHydrated && currentAnnotations.length > 0 && (
