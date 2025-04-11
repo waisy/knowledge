@@ -28,11 +28,21 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
         rehypeKatex,
         [rehypePrism, { ignoreMissing: true }], // Ignore errors for languages not supported
       ]}
-      // Potentially add components mapping here for custom styling of elements
-      // components={{
-      //   h1: ({node, ...props}) => <h1 className="text-3xl font-bold my-4" {...props} />,
-      //   // ... other custom components
-      // }}
+      // Configure components to handle marks properly
+      components={{
+        // Make sure marks render with correct styles
+        mark: ({ node, ...props }) => (
+          <mark
+            style={{ 
+              backgroundColor: props.style?.backgroundColor || '#ffff00',
+              padding: '2px 0',
+              borderRadius: '2px' 
+            }}
+            data-highlight-id={props['data-highlight-id']}
+            {...props}
+          />
+        ),
+      }}
     >
       {content}
     </ReactMarkdown>

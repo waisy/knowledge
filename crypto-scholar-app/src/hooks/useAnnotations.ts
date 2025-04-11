@@ -6,7 +6,8 @@ import { useState, useEffect, useCallback } from 'react';
 export interface Annotation {
   id: string; // Unique ID for the annotation
   text: string; // The highlighted text content
-  // We might add more context later, e.g., start/end offsets or surrounding text
+  contextBefore?: string; // A few characters before the highlight to determine its position
+  contextAfter?: string; // A few characters after the highlight to determine its position
 }
 
 // Define the structure for storing annotations per slug
@@ -67,19 +68,25 @@ export const useAnnotations = () => {
 
   // Add a new annotation for a specific slug
   const addAnnotation = useCallback(
-    (slug: string, text: string) => {
+    (slug: string, text: string, contextBefore?: string, contextAfter?: string) => {
       if (!text) return;
 
       const newAnnotation: Annotation = {
         id: crypto.randomUUID(), // Simple unique ID
         text: text,
+        contextBefore,
+        contextAfter,
       };
 
       setAnnotations((prevAnnotations) => {
         const updatedAnnotations = { ...prevAnnotations };
         const slugAnnotations = updatedAnnotations[slug] || [];
-        // Avoid adding exact duplicates
-        if (!slugAnnotations.some(ann => ann.text === text)) {
+        // Avoid adding exact duplicates (same text and context)
+        if (!slugAnnotations.some(ann => 
+          ann.text === text && 
+          ann.contextBefore === contextBefore && 
+          ann.contextAfter === contextAfter
+        )) {
           updatedAnnotations[slug] = [...slugAnnotations, newAnnotation];
           setStoredAnnotations(updatedAnnotations); // Save to localStorage
           return updatedAnnotations;

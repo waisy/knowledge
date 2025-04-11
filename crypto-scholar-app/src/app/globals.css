@@ -144,3 +144,21 @@ main h2[id],
 main h3[id] {
   scroll-margin-top: 5rem; /* Adjust value based on actual header height */
 }
+
+/* Highlighting styles */
+mark {
+  padding: 2px 0;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.content-container {
+  position: relative;
+}
+
+.highlight-controls {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(8px);
+}
