@@ -49,20 +49,46 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
       
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        const contextRange = range.cloneRange();
         
-        // Get context before (up to 20 chars)
-        const beforeContextNode = range.startContainer;
-        if (beforeContextNode.nodeType === Node.TEXT_NODE) {
-          const start = Math.max(0, range.startOffset - 20);
-          contextBefore = beforeContextNode.textContent?.substring(start, range.startOffset) || '';
-        }
+        // Create temporary elements to get the context before and after
+        // even when the selection spans multiple elements
+        const fullContent = containerRef.current?.textContent || '';
+        const selectionText = selection.toString().trim();
         
-        // Get context after (up to 20 chars)
-        const afterContextNode = range.endContainer;
-        if (afterContextNode.nodeType === Node.TEXT_NODE) {
-          const end = Math.min((afterContextNode.textContent?.length || 0), range.endOffset + 20);
-          contextAfter = afterContextNode.textContent?.substring(range.endOffset, end) || '';
+        // Find the selected text in the full content
+        const selectionIndex = fullContent.indexOf(selectionText);
+        if (selectionIndex >= 0) {
+          // Get up to 20 chars of context
+          const contextBeforeStart = Math.max(0, selectionIndex - 20);
+          contextBefore = fullContent.substring(contextBeforeStart, selectionIndex);
+          
+          const selectionEnd = selectionIndex + selectionText.length;
+          const contextAfterEnd = Math.min(fullContent.length, selectionEnd + 20);
+          contextAfter = fullContent.substring(selectionEnd, contextAfterEnd);
+          
+          console.log('Context extracted from full content:');
+          console.log('Before:', contextBefore);
+          console.log('Selection:', selectionText);
+          console.log('After:', contextAfter);
+        } else {
+          // Fallback to basic method if we can't find the text in full content
+          try {
+            // Get context before
+            const beforeRange = range.cloneRange();
+            beforeRange.collapse(true); // Collapse to start
+            beforeRange.setStart(containerRef.current || document.body, 0);
+            const beforeContext = beforeRange.toString();
+            contextBefore = beforeContext.substring(Math.max(0, beforeContext.length - 20));
+            
+            // Get context after
+            const afterRange = range.cloneRange();
+            afterRange.collapse(false); // Collapse to end
+            afterRange.setEndAfter(containerRef.current || document.body);
+            const afterContext = afterRange.toString();
+            contextAfter = afterContext.substring(0, Math.min(afterContext.length, 20));
+          } catch (e) {
+            console.error('Error getting context using range method:', e);
+          }
         }
       }
       
@@ -104,31 +130,66 @@ export default function InteractiveMarkdownArea({ content, slug }: InteractiveMa
     // Use setTimeout to ensure selection is complete
     setTimeout(() => {
       const selection = window.getSelection();
-      const text = selection?.toString().trim() ?? '';
+      if (!selection || !selection.rangeCount || selection.isCollapsed) {
+        console.log('[handleMouseUp] No valid selection');
+        setSelectedText('');
+        setIsPopoverOpen(false);
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      
+      // Check if selection is inside our container
+      if (!containerRef.current || !containerRef.current.contains(range.commonAncestorContainer)) {
+        console.log('[handleMouseUp] Selection outside container');
+        setSelectedText('');
+        setIsPopoverOpen(false);
+        return;
+      }
+      
+      // Extract the selected text, handling cross-element selection
+      let selectedContent = '';
+      
+      // Handle complex selections that span multiple DOM nodes
+      if (range.startContainer !== range.endContainer) {
+        console.log('[handleMouseUp] Cross-element selection detected');
+        
+        // Create a temporary div to hold the selection
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(range.cloneContents());
+        
+        // Get the text content of the selection
+        selectedContent = tempDiv.textContent || '';
+      } else {
+        // Simple selection within a single text node
+        selectedContent = range.toString();
+      }
+      
+      // Clean up and trim the selected text
+      const text = selectedContent.trim();
       console.log('[handleMouseUp] Detected text:', text || 'none');
 
-      if (text && selection && containerRef.current && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          if (containerRef.current.contains(range.commonAncestorContainer)) {
-              console.log('[handleMouseUp] Selection is inside container.');
-              setSelectedText(text);
-              // Check if already highlighted
-              const isAlreadyHighlighted = currentAnnotations.some(ann => ann.text === text);
-              setIsSelectedTextHighlighted(isAlreadyHighlighted);
-              console.log('[handleMouseUp] isAlreadyHighlighted:', isAlreadyHighlighted);
-              
-              // Get position of selected text
-              const rect = range.getBoundingClientRect();
-              
-              // Use the new positioning function
-              const position = getPopoverPosition(rect);
-              console.log('[handleMouseUp] Setting position:', position);
-              setPopoverPosition(position);
-              setIsPopoverOpen(true); 
-              console.log('[handleMouseUp] Setting isPopoverOpen: true');
-              return;
-          }
+      if (text) {
+        console.log('[handleMouseUp] Selection is inside container.');
+        setSelectedText(text);
+        
+        // Check if already highlighted
+        const isAlreadyHighlighted = currentAnnotations.some(ann => ann.text === text);
+        setIsSelectedTextHighlighted(isAlreadyHighlighted);
+        console.log('[handleMouseUp] isAlreadyHighlighted:', isAlreadyHighlighted);
+        
+        // Get position of selected text
+        const rect = range.getBoundingClientRect();
+        
+        // Use the new positioning function
+        const position = getPopoverPosition(rect);
+        console.log('[handleMouseUp] Setting position:', position);
+        setPopoverPosition(position);
+        setIsPopoverOpen(true); 
+        console.log('[handleMouseUp] Setting isPopoverOpen: true');
+        return;
       }
+
       // If no valid selection or outside container
       console.log('[handleMouseUp] Clearing selection and closing popover.');
       setSelectedText('');
